@@ -1,0 +1,96 @@
+GENERAL
+=======
+
+This file describes the "OH2BNS version" of chansim. I have made some
+enhancements and other changes to Johan Forrer's great channel simulator
+that hopefully make building and using it more fun!
+
+Some of the changes affect the actual simulation process. I have tried to
+make sure that the process is correct but I can not make any claims
+about it. I do not understand the simulation process well enough to do
+that...
+
+In case you find any bugs or have suggestions for further improvement
+please drop me a line.
+
+INSTALLING
+==========
+
+Installing chansim is simple. Just run
+
+  make
+
+and then (as root)
+
+  make install
+
+By default the chansim executable is installed in /usr/local/bin. If you
+want to change that you can edit the Makefile (or simply move the binary
+to another directory).
+
+USAGE
+=====
+
+Usage of chansim is as follows:
+
+  chansim [options] <SNR> <type>
+
+There are two obligatory arguments: 
+
+        <SNR>                   Signal to noise ratio (in dB).
+
+        <type>                  HF channel type. (Path delay / Doppler spread)
+
+                                0 - Noise only           (  ---  /   --- )
+                                1 - Flat 1               (  ---  / 0.2 Hz)
+                                2 - Flat 2               (  ---  / 1.0 Hz)
+                                3 - CCIR good            (0.5 ms / 0.1 Hz)
+                                4 - CCIR moderate        (1.0 ms / 0.5 Hz)
+                                5 - CCIR poor            (2.0 ms /   1 Hz)
+                                6 - CCIR flutter fading  (0.5 ms /  10 Hz)
+                                7 - Extreme              (2.0 ms /   5 Hz)
+
+Chansim also recognizes several options that controls the way the
+simulation is done:
+
+        -a <ampl>               Set the RMS amplitude of the incoming signal.
+                                Allowed range 0...1. Default is to calculate
+                                it at runtime.
+
+        -b <bw>                 Noise bandwidth. Default 3000 Hz.
+
+        -f <nco>                Test NCO frequency. Only valid with I/O = 0.
+                                Default 1800 Hz.
+
+	-g <gain>		Input gain as a floating point number
+				between 0 and 1. Input signal is scaled
+				with this factor. Default is 1.
+
+	-i <IO type>            I/O type.
+
+                                0 - Internal test NCO
+                                1 - Soundcard I/O
+                                2 - Pipe I/O (stdin/stdout)
+
+				Default is pipe I/O.
+
+	-n <noise type>         Noise type.
+
+                                0 - Gaussian noise
+                                1 - LaPlacian noise
+                                2 - Impulse noise
+
+				Default is Gaussian noise.
+
+        -o <offset>             Frequency offset. Default 0 Hz.
+
+	-r <seed>		Seed for the random number generator.
+				Default is a combination of current time
+				and process id.
+
+        -s <samplerate>         Soundcard samplerate. Also used to scale
+                                various filters and timings. Default 8000
+				sps.
+
+-- 
+Tomi Manninen OH2BNS, <oh2bns@sral.fi>

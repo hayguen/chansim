@@ -1,0 +1,56 @@
+====================================================
+
+Please read also README.oh2bns !!!
+
+====================================================
+
+Watterson Gaussian-Scatter Ionspheric HF Channel Model
+
+GENERAL:
+For more details about HF channel simulation, please see
+http://www.peak.org/~forrerj. 
+
+This program is an implementation of the "Watterson HF Channel Model" (or at
+least what I understand it's intentions.) It will perform CCIR 520-1 types of
+conditions (GOOD, MODERATE, POOR, FLUTTER-FADING) against several types of
+noise backgrounds (Gaussian, LaPlacian, impulse) for a 3 kHz base-band
+bandwidth (approximately ... it's really a little bit wider, for those experts
+that want to know.)  It also includes additional test modes; Noise with no
+fading, flat fading, and selective fading (multipath.)
+
+The program is designed as the usual Unix-style tool; it will accept and handle
+redirected input and output (of course, such data must represent the sample
+rate that the code expects, i.e. 8kSPS.) This is ideal for evaluating modems
+under simulated HF conditions; simply redirect the sampled waveform data from
+your modulator program code through the simulator, then redirect the
+simulator's output to your demodultor code, record error statistics, and
+produce BER charts. This way, the entire test bed is contained on a common
+simulated platform (modem, simulator, demodulator.)
+
+For evaluation of existing external modems, the program can be directed to
+accept audio I/O from the Linux sound system. It may, however, not work
+well in ARQ circuits simply because there are significant time delays that may
+adversely affect the real-time link turnaround.
+
+INSTALLING:
+Unpack the source code in a convenient directory and build the executable.
+
+gcc -o watterson main.c -lm
+
+RUNNING:
+The program needs three command-line parameters: SNR, Type of Channel, and IO
+option. SNR is in dB and is a floating-point value in the range say -10.0 to
+40db (for practical purposes.) The type of channel is a digit between 0 and 7,
+the values are documented in the source code (3=CCIR GOOD.) For IO option, use
+either 1 or 2 (1=sound card I/O, 2=stdin/stdout.)
+
+Be warned that there is really little or no error checking of command-line
+parameters yet, and there may be bugs. The program has not been tested
+extensively as yet, but appears to work OK.
+
+Drop me a line if you find bugs or make improvements so we can share that with
+others.
+
+Enjoy!
+
+Johan Forrer, KC7WW
