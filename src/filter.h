@@ -4,10 +4,8 @@
 #define FilterLen	64
 #define BufferLen	1024
 
-#ifndef	__NEED_ONLY_FILTERLEN
-
 #include <string.h>
-#include "complex.h"
+#include <complex.h>
 
 /* ---------------------------------------------------------------------- */
 
@@ -26,12 +24,7 @@ extern void clear_filter(struct filter_s *);
 
 /* ---------------------------------------------------------------------- */
 
-#ifdef __i386__
-#include "filter-i386.h"
-#endif				/* __i386__ */
-
-#ifndef __HAVE_ARCH_MAC
-extern inline float mac(const float *a, const float *b)
+static inline float mac(const float *a, const float *b)
 {
 	float sum = 0;
 	unsigned int i;
@@ -40,19 +33,18 @@ extern inline float mac(const float *a, const float *b)
 		sum += (*a++) * (*b++);
 	return sum;
 }
-#endif				/* __HAVE_ARCH_MAC */
 
-extern inline complex filter(struct filter_s *f, complex in)
+static inline float complex filter(struct filter_s *f, float complex in)
 {
         float *iptr = f->ibuffer + f->ptr;
         float *qptr = f->qbuffer + f->ptr;
-        complex out;
+        float complex out;
 
-        *iptr = in.re;
-        *qptr = in.im;
+        *iptr = crealf(in);
+        *qptr = cimagf(in);
 
-        out.re = mac(iptr - FilterLen, f->ifilter);
-        out.im = mac(qptr - FilterLen, f->qfilter);
+        out = mac(iptr - FilterLen, f->ifilter)
+            + mac(qptr - FilterLen, f->qfilter) * _Complex_I;
 
         f->ptr++;
         if (f->ptr == BufferLen) {
@@ -68,6 +60,4 @@ extern inline complex filter(struct filter_s *f, complex in)
 
 /* ---------------------------------------------------------------------- */
 
-#endif				/* __NEED_ONLY_FILTERLEN */
-
-#endif				/* _FILTER_H */
+#endif  /* _FILTER_H */

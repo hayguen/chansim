@@ -27,7 +27,7 @@ GNU General Public License v2.0, see [LICENSE](LICENSE) file.
 ## External documentation
 
 * May-June 2000 QEX Magazine, see Johan B. Forrer, KC7WW article 'A Low-Cost HF Channel Simulator for Digital Systems'
- [http://om6bb.bab.sk/files/HAM%20kniznica/Magaziny/QEX/03%20May-June%202000%20QEX.pdf](http://om6bb.bab.sk/files/HAM%20kniznica/Magaziny/QEX/03%20May-June%202000%20QEX.pdf)
+ [http://om6bb.bab.sk/files/HAM kniznica/Magaziny/QEX/03 May-June 2000 QEX.pdf](http://om6bb.bab.sk/files/HAM%20kniznica/Magaziny/QEX/03%20May-June%202000%20QEX.pdf)
 
 
 ## Similar Software

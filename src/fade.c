@@ -52,7 +52,7 @@ static inline void Gauss_Filter(float *Fade)
 //----------------------------------------------------------------------------
 //  Generate Rayleigh-distributed fade gain functions
 //----------------------------------------------------------------------------
-void FadeGains(complex *fade0, complex *fade1)
+void FadeGains(float complex *fade0, float complex *fade1)
 {
         // inputs goes into third element of IIR filter state variables
         Rayleigh(IFade0 + 3, QFade0 + 3);
@@ -67,12 +67,10 @@ void FadeGains(complex *fade0, complex *fade1)
 
 	// output is from the first element of IIR state variables
 	if (fade0) {
-		fade0->re = *IFade0;
-		fade0->im = *QFade0;
+		*fade0 = *IFade0 + *QFade0 * _Complex_I;
 	}
 	if (fade1) {
-		fade1->re = *IFade1;
-		fade1->im = *QFade1;
+		*fade1 = *IFade1 + *QFade1 * _Complex_I;
 	}
 }
 

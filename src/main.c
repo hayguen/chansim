@@ -64,10 +64,6 @@
 // a compromise. See the values selected as initialized.
 //
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -95,23 +91,23 @@ int size_out;
 //----------------------------------------------------------------------------
 // Test NCO work definitions
 //----------------------------------------------------------------------------
-float NCOFreq =		1800.0;	// default NCO frequency
-#define NCO_GAIN	2500.0	// sets default NCO gain to not overdrive
-float phase_accum =	0.0;
+float NCOFreq =		1800.0F;	// default NCO frequency
+#define NCO_GAIN	2500.0F		// sets default NCO gain to not overdrive
+float phase_accum =	0.0F;
 float delta;
 
 //----------------------------------------------------------------------------
 // Simulator definitions and memory assignments
 //----------------------------------------------------------------------------
-#define DIRECT		1.0	// These describe how to combine
-#define DELAYED		1.0	// direct and delayed paths
+#define DIRECT		1.0F	// These describe how to combine
+#define DELAYED		1.0F	// direct and delayed paths
 
 int SampleRate =	8000;	// 8000 samples per second
-float ChannelBW	=	3000.0;	// 3 kHz channel (used in noise shaping)
-float FreqOffset =	0.0;	// Default frequency offset
-float Amplitude = 	0.0;	// Signal amplitude (RMS). Zero means
+float ChannelBW	=	3000.0F;	// 3 kHz channel (used in noise shaping)
+float FreqOffset =	0.0F;	// Default frequency offset
+float Amplitude = 	0.0F;	// Signal amplitude (RMS). Zero means
 				// compute at runtime
-float InputGain =	1.0;	// The input signal is scaled with this
+float InputGain =	1.0F;	// The input signal is scaled with this
 float DelTime;			// Time difference between two paths
 float SigLvl;			// Signal level for given SNR
 float FrSpread;			// Frequency (doppler) spread
@@ -124,75 +120,57 @@ struct noise_s *Noise;		// Struct for Noise generation
 //------------------------------------------------------------------
 // Usage stuff
 //------------------------------------------------------------------
-static char *UsageString = "\
-Usage: chansim [-a <ampl>] [-b <bw>] [-f <nco>] [-g <gain>] [-i <IO type>] [-n <noise type>] [-o <offset>] [-r <seed>] [-s <samplerate>] <SNR> <format>
-Type `chansim -h' for more information.
-";
+static const char *UsageString = 
+"Usage: chansim [-a <ampl>] [-b <bw>] [-f <nco>] [-g <gain>] [-i <IO type>] [-n <noise type>] [-o <offset>] [-r <seed>] [-s <samplerate>] <SNR> <format>\n"
+"Type 'chansim -h' for more information.\n";
 
-static char *HelpString = "\
+static const char *HelpString =
+"\n"
+"chansim - Watterson Ionospheric Gaussian-Scatter HF Channel Model\n"
+"version " Version "\n"
+"\n"
+"Usage: chansim [options] <SNR> <format>\n"
+"\n"
+"Arguments:\n"
+"    <SNR dB>          Signal to noise ratio.\n"
+"    <format>          HF channel type. (Path delay / Doppler spread)\n"
+"                      0 - Noise only           (  ---  /   --- )\n"
+"                      1 - Flat 1               (  ---  / 0.2 Hz)\n"
+"                      2 - Flat 2               (  ---  / 1.0 Hz)\n"
+"                      3 - CCIR good            (0.5 ms / 0.1 Hz)\n"
+"                      4 - CCIR moderate        (1.0 ms / 0.5 Hz)\n"
+"                      5 - CCIR poor            (2.0 ms /   1 Hz)\n"
+"                      6 - CCIR flutter fading  (0.5 ms /  10 Hz)\n"
+"                      7 - Extreme              (2.0 ms /   5 Hz)\n"
+"\n"
+"Options:\n"
+"    -a <ampl>         Set the RMS amplitude of the incoming signal.\n"
+"                      Allowed range 0...1. Default is to calculate\n"
+"                      it at runtime.\n"
+"    -b <bw>           Noise bandwidth. Default 3000 Hz.\n"
+"    -f <nco>          Test NCO frequency. Only valid with I/O = 0.\n"
+"                      Default 1800 Hz.\n"
+"    -g <gain>         Input gain. Input signal is scaled with\n"
+"                      this factor. Default is 1.\n"
+"    -i <IO type>      I/O type.\n"
+"                      0 - Internal test NCO\n"
+"                      1 - Soundcard I/O\n"
+"                      2 - Pipe I/O (stdin/stdout)\n"
+"                      Default is pipe I/O.\n"
+"    -n <noise type>   Noise type.\n"
+"                      0 - Gaussian noise\n"
+"                      1 - LaPlacian noise\n"
+"                      2 - Impulse noise\n"
+"                      Default is Gaussian noise.\n"
+"    -o <offset>       Frequency offset. Default 0 Hz.\n"
+"    -r <seed>         Seed for the random number generator.\n"
+"                      Default is a combination of current time\n"
+"                      and process id.\n"
+"    -s <samplerate>   Soundcard samplerate. Also used to scale\n"
+"                      various filters and timings. Default 8000 sps.\n"
+"\n";
 
-      chansim - Watterson Ionospheric Gaussian-Scatter HF Channel Model
-      =================================================================
-
-                             version " Version "
-
-Usage: chansim [options] <SNR> <format>
-
-Arguments:
-        <SNR dB>                Signal to noise ratio.
-
-        <format>                HF channel type. (Path delay / Doppler spread)
-
-                                0 - Noise only           (  ---  /   --- )
-                                1 - Flat 1               (  ---  / 0.2 Hz)
-                                2 - Flat 2               (  ---  / 1.0 Hz)
-                                3 - CCIR good            (0.5 ms / 0.1 Hz)
-                                4 - CCIR moderate        (1.0 ms / 0.5 Hz)
-                                5 - CCIR poor            (2.0 ms /   1 Hz)
-                                6 - CCIR flutter fading  (0.5 ms /  10 Hz)
-                                7 - Extreme              (2.0 ms /   5 Hz)
-
-Options:
-        -a <ampl>               Set the RMS amplitude of the incoming signal.
-                                Allowed range 0...1. Default is to calculate
-                                it at runtime.
-
-        -b <bw>                 Noise bandwidth. Default 3000 Hz.
-
-        -f <nco>                Test NCO frequency. Only valid with I/O = 0.
-                                Default 1800 Hz.
-
-	-g <gain>		Input gain. Input signal is scaled with
-				this factor. Default is 1.
-
-	-i <IO type>            I/O type.
-
-                                0 - Internal test NCO
-                                1 - Soundcard I/O
-                                2 - Pipe I/O (stdin/stdout)
-
-				Default is pipe I/O.
-
-	-n <noise type>         Noise type.
-
-                                0 - Gaussian noise
-                                1 - LaPlacian noise
-                                2 - Impulse noise
-
-				Default is Gaussian noise.
-
-        -o <offset>             Frequency offset. Default 0 Hz.
-
-	-r <seed>		Seed for the random number generator.
-				Default is a combination of current time
-				and process id.
-
-        -s <samplerate>         Soundcard samplerate. Also used to scale
-                                various filters and timings. Default 8000 sps.
-
-";
-
-static char *HF_Channel_type[] =
+static const char *HF_Channel_type[] =
 {
 	"ONLY_NOISE",		// 0
 	"FLAT 1",		// 1
@@ -204,14 +182,14 @@ static char *HF_Channel_type[] =
 	"EXTREME"		// 7
 };
 
-static char *IO_usage[] =
+static const char *IO_usage[] =
 {
 	"Internal NCO",		// 0
 	"/dev/dsp Sound I/O",	// 1
 	"STDIO"			// 2
 };
 
-static char *HF_Noise[] =
+static const char *HF_Noise[] =
 {
 	"Gaussian noise",	// 0
 	"LaPlacian noise",	// 1
@@ -230,23 +208,21 @@ static char *HF_Noise[] =
 //------------------------------------------------------------------
 static float simprocess(float input_signal)
 {
-	static complex fade0, fade1;
+	static float complex fade0, fade1;
 	static float nco = 0.0;
 	static int pointsleft = 0;
 	float rmsval;
 	float inoise;
-	complex sig, dsig, z;
+	float complex sig, dsig, z;
 
 	// Create analytic input signal
-	sig.re = input_signal / M_SQRT2;
-	sig.im = input_signal / M_SQRT2;
+	sig = (input_signal / M_SQRT2) + (input_signal / M_SQRT2) * _Complex_I;
 	sig = filter(Filter, sig);
 
 	// Shift the frequency if requested
 	if (FreqOffset != 0.0) {
-		z.re = cos(nco);
-		z.im = sin(nco);
-		sig = cmul(sig, z);
+		z = cosf(nco) + sinf(nco) * _Complex_I;
+		sig = sig * z;
 
 		nco += 2.0 * M_PI * FreqOffset / SampleRate;
 
@@ -263,10 +239,8 @@ static float simprocess(float input_signal)
 		if (FrSpread > 0.0) {
 			FadeGains(&fade0, &fade1);
 		} else {
-			fade0.re = 1.0 / M_SQRT2;
-			fade0.im = 1.0 / M_SQRT2;
-			fade1.re = 1.0 / M_SQRT2;
-			fade1.im = 1.0 / M_SQRT2;
+			fade0 = (1.0 / M_SQRT2) + (1.0 / M_SQRT2) * _Complex_I;
+			fade1 = (1.0 / M_SQRT2) + (1.0 / M_SQRT2) * _Complex_I;
 		}
 		pointsleft = SampleRate / TapUpdRate;
 	}
@@ -281,21 +255,19 @@ static float simprocess(float input_signal)
 
 		// Delayed (second) path
 		dsig = delayline(sig);
-		dsig = cmul(dsig, fade1);
+		dsig = dsig * fade1;
 
 		// First path
-		sig = cmul(sig, fade0);
+		sig = sig * fade0;
 	} else {
 		// Flat fading
 
 		// First path
-		sig = cmul(sig, fade0);
-		sig.re *= M_SQRT2;
-		sig.im *= M_SQRT2;
+		sig = sig * fade0;
+		sig *= M_SQRT2;
 
 		// Delayed path
-		dsig.re = 0.0;
-		dsig.im = 0.0;
+		dsig = 0.0F;
 	}
 
 	// Compute input signal's RMS
@@ -314,7 +286,7 @@ static float simprocess(float input_signal)
 	inoise = BandLtdNoise(Noise) * rmsval / SigLvl;
 
 	// compute output, we don't use imaginary part here
-	return DIRECT * sig.re + DELAYED * dsig.re + inoise;
+	return DIRECT * crealf(sig) + DELAYED * crealf(dsig) + inoise;
 	// return DIRECT * sig.re + DELAYED * dsig.re;
 	// return inoise;
 }
@@ -436,21 +408,21 @@ static int gensig(int16_t *buf_ptr, int size, int iotype)
 		}
 
 		// Push signal though HF channel
-		ftemp = temp * InputGain / 32768.0;
+		ftemp = temp * InputGain / 32768.0F;
 		ftemp = simprocess(ftemp);
 
 		// Saturate instead of wraparound
-		if (ftemp > 0.999) {
-			ftemp = 0.999;
+		if (ftemp > 0.999F) {
+			ftemp = 0.999F;
 			fprintf(stderr, "chansim: positive clipping!\n");
 		}
-		if (ftemp < -0.999) {
-			ftemp = -0.999;
+		if (ftemp < -0.999F) {
+			ftemp = -0.999F;
 			fprintf(stderr, "chansim: negative clipping!\n");
 		}
 
 		// output signal is 16-bit PCM
-		buf_ptr[i] = (int16_t) (ftemp * 32768.0);
+		buf_ptr[i] = (int16_t) (ftemp * 32768.0F);
 	}
 
 	return i;
@@ -467,6 +439,7 @@ int main(int argc, char *argv[])
 	int Noise_type = 0;	/* default is gaussian */
 	float SNR_parm;
 	unsigned int seed;
+	ssize_t written;
 
 	seed = time(NULL) + getpid();
 
@@ -508,7 +481,7 @@ int main(int argc, char *argv[])
 			SampleRate = atoi(optarg);
 			break;
 		case 'h':
-			printf(HelpString);
+			printf("%s", HelpString);
 			exit(0);
 			break;
 		case ':':
@@ -522,7 +495,7 @@ int main(int argc, char *argv[])
 		errflag++;
 
 	if (errflag) {
-		fprintf(stderr, UsageString);
+		fprintf(stderr, "%s", UsageString);
 		exit(1);
 	}
 
@@ -537,22 +510,14 @@ int main(int argc, char *argv[])
 	// Scale amplitude (set by user) with input gain
 	Amplitude *= InputGain;
 
-	fprintf(stderr, "Simulating %s-type HF Channel\n",
-		HF_Channel_type[Chan_type]);
-	fprintf(stderr, "\tS/N ratio = %.1f dB (%s)\n",
-		SNR_parm,
-		HF_Noise[Noise_type]);
-	fprintf(stderr, "\tNoise bandwidth = %.1f Hz\n",
-		ChannelBW);
-	fprintf(stderr, "\tSignal amplitude = %.3f %s\n",
-		Amplitude,
-		Amplitude == 0.0 ? "(calculated at runtime)" : "");
-	fprintf(stderr, "\tFrequency offset = %.1f Hz\n",
-		FreqOffset);
-	fprintf(stderr, "\tSample rate = %d sps\n",
-		SampleRate);
-	fprintf(stderr, "\t%s ",
-		IO_usage[IO_type]);
+	fprintf(stderr, "Simulating %s-type HF Channel\n", HF_Channel_type[Chan_type]);
+	fprintf(stderr, "\tS/N ratio = %.1f dB (%s)\n", SNR_parm, HF_Noise[Noise_type]);
+	fprintf(stderr, "\tNoise bandwidth = %.1f Hz\n", ChannelBW);
+	fprintf(stderr, "\tSignal amplitude = %.3f%s\n", Amplitude,
+		Amplitude == 0.0 ? " (calculated at runtime)" : "");
+	fprintf(stderr, "\tFrequency offset = %.1f Hz\n", FreqOffset);
+	fprintf(stderr, "\tSample rate = %d sps\n", SampleRate);
+	fprintf(stderr, "\t%s ", IO_usage[IO_type]);
 	if (IO_type == 0)
 		fprintf(stderr, "(frequency = %.1f Hz)\n", NCOFreq);
 	else
@@ -572,7 +537,7 @@ int main(int argc, char *argv[])
 	}
 
 	// Seed the random number generator
-	srandom(seed);
+	srand(seed);
 
 	// Initialize HF channel simulation parameters
 	SetParms(SNR_parm, Chan_type);
@@ -636,7 +601,11 @@ int main(int argc, char *argv[])
 			// Initiate the writing of the prepared buffer.
 			// This write() is not blocked because there is space
 			// left in the output buffer.
-			write(audio_fd, audio_buf_out, size_out * sizeof(int16_t));
+			written = write(audio_fd, audio_buf_out, size_out * sizeof(int16_t));
+			if (written < 0) {
+				perror("Error: write audio:");
+				exit(-1);
+			}
 		}
 
 		// File IO
