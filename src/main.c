@@ -66,6 +66,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -439,6 +440,7 @@ int main(int argc, char *argv[])
 	int Noise_type = 0;	/* default is gaussian */
 	float SNR_parm;
 	unsigned int seed;
+	uint32_t usleep_duration = 0U;
 	ssize_t written;
 
 	seed = time(NULL) + getpid();
@@ -531,8 +533,14 @@ int main(int argc, char *argv[])
 	if (IO_type < 2) {
 		audio_fd = init_audio(SampleRate, 0, AFMT_S16_LE);
 		if (audio_fd < 0) {
-			fprintf(stderr, "error audio_fd is %d\n", audio_fd);
-			exit(-1);
+			if (IO_type == 1) {
+				fprintf(stderr, "error audio_fd is %d\n", audio_fd);
+				exit(-1);
+			}
+			else {
+				fprintf(stderr, "error audio not available. output will go to stdout as 16 bit mono.\n");
+				usleep_duration = 1000000000UL / SampleRate;
+			}
 		}
 	}
 
@@ -580,7 +588,7 @@ int main(int argc, char *argv[])
 		// Wait for a full data buffer -- this is our pacer.
 		// This read() is a blocked call since the input buffer
 		// is not yet full.
-		if (IO_type == 0 || IO_type == 1) {
+		if ((IO_type == 0 && audio_fd >= 0) || IO_type == 1) {
 			size_in = read(audio_fd, audio_buf_in, BUF_SIZE * sizeof(int16_t));
 
 			if (size_in == 0)
@@ -608,6 +616,13 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// internal test NCO - without soundcard
+		if (IO_type == 0 && audio_fd < 0) {
+			usleep( usleep_duration );
+			size_in = BUF_SIZE;
+			fwrite(audio_buf_out, sizeof(int16_t), size_out, stdout);
+		}
+
 		// File IO
 		if (IO_type == 2) {
 			size_in = fread(audio_buf_in, sizeof(int16_t), BUF_SIZE, stdin);
@@ -618,5 +633,5 @@ int main(int argc, char *argv[])
 			fwrite(audio_buf_out, sizeof(int16_t), size_out, stdout);
 		}
 	}
-	return EXIT_SUCCESS;
+	return 0;
 }
