@@ -59,8 +59,8 @@ struct filter_s *init_filter(float f1, float f2)
 		t = i - (FilterLen - 1.0) / 2.0;
 		h = i * (1.0 / (FilterLen - 1.0));
 
-		x = (2 * f2 * sinc(2 * f2 * t) -
-		     2 * f1 * sinc(2 * f1 * t)) * hamming(h);
+		x = (2 * f2 * sinc((2.0 * f2) * t) -
+		     2 * f1 * sinc((2.0 * f1) * t)) * hamming(h);
 		f->ifilter[i] = x;
 #ifdef DEBUG
 		fprintf(stderr, "%.10f\t", x);
@@ -71,8 +71,8 @@ struct filter_s *init_filter(float f1, float f2)
 		 * is in time reversed order. This will be anti-
 		 * symmetric so the minus sign handles that for us.
 		 */
-		x = (2 * f2 * cosc(2 * f2 * t) -
-		     2 * f1 * cosc(2 * f1 * t)) * hamming(h);
+		x = (2 * f2 * cosc((2.0 * f2) * t) -
+		     2 * f1 * cosc((2.0 * f1) * t)) * hamming(h);
 		f->qfilter[i] = -x;
 #ifdef DEBUG
 		fprintf(stderr, "%.10f\n", x);

@@ -25,3 +25,8 @@ set(CHANSIM_HDRS
 add_executable(chansim  ${CHANSIM_SRCS} ${CHANSIM_HDRS})
 target_compile_definitions(chansim PRIVATE _GNU_SOURCE)
 target_link_libraries(chansim  m)
+
+# if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+target_compile_options(chansim PRIVATE
+  $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic>
+)

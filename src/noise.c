@@ -65,26 +65,26 @@ static inline float noisefilter(struct noise_s *n, float in)
 //----------------------------------------------------------------------------
 float BandLtdNoise(struct noise_s *n)
 {
-	float z = 0.0;
+	float z = 0.0F;
 
 	switch (n->noisetype) {
 	case 0:					// Gaussian
-		z = sqrt(-2.0 * log(RNG()));
-		z *= cos(2.0 * M_PI * RNG());
+		z = sqrtf(-2.0 * log(RNG()));
+		z *= cosf(2.0 * M_PI * RNG());
 		break;
 	case 1:					// La Placian
 		z = RNG();
-		if (z < 0.5)
-			z = log(2.0 * z) / M_SQRT2;
+		if (z < 0.5F)
+			z = logf(2.0F * z) / M_SQRT2;
 		else
-			z = -log(2.0 * (1.0 - z)) / M_SQRT2;
+			z = -logf(2.0F * (1.0F - z)) / M_SQRT2;
 		break;
 	case 2:					// Impulsive
 		// This only works for SNR <= 5 or so
-		z = -M_SQRT2 * log(RNG());
+		z = -M_SQRT2 * logf(RNG());
 		// 5 => scratchy, 8 => Geiger
-		if (abs(z) <= 8.0)		
-			z = 0.0;		// choose whatever you fancy.
+		if (fabsf(z) <= 8.0F)
+			z = 0.0F;		// choose whatever you fancy.
 		break;
 	}
 

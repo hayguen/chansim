@@ -115,7 +115,7 @@ float FrSpread;			// Frequency (doppler) spread
 int TapUpdRate;			// Update rate for the fading gain params
 
 struct filter_s *Filter;	// Struct for the Hilbert transformer
-struct rms_s *Rms;		// Struct for RMS calculations
+struct rms_s *RootMeanSqr;	// Struct for RMS calculations
 struct noise_s *Noise;		// Struct for Noise generation
 
 //------------------------------------------------------------------
@@ -274,7 +274,7 @@ static float simprocess(float input_signal)
 	// Compute input signal's RMS
 	// This is needed to scale noise magnitude.
 	if (Amplitude == 0.0)
-		rmsval = rms(Rms, input_signal);
+		rmsval = rms(RootMeanSqr, input_signal);
 	else
 		rmsval = Amplitude;
 
@@ -564,8 +564,8 @@ int main(int argc, char *argv[])
 	init_delayline(DelTime, SampleRate);
 
 	// Calculate RMS over 256 samples, update every 64 samples
-	Rms = init_rms(256, 64);
-	if (!Rms) {
+	RootMeanSqr = init_rms(256, 64);
+	if (!RootMeanSqr) {
 		fprintf(stderr, "RMS initialization failed\n");
 		exit(1);
 	}
