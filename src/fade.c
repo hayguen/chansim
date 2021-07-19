@@ -1,8 +1,11 @@
+
+#define _USE_MATH_DEFINES
+
+#include "chansim.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-
-#include "chansim.h"
 
 static float g, a0, a1, a2;
 
@@ -52,7 +55,7 @@ static inline void Gauss_Filter(float *Fade)
 //----------------------------------------------------------------------------
 //  Generate Rayleigh-distributed fade gain functions
 //----------------------------------------------------------------------------
-void FadeGains(float complex *fade0, float complex *fade1)
+void FadeGains(float_complex *fade0, float_complex *fade1)
 {
         // inputs goes into third element of IIR filter state variables
         Rayleigh(IFade0 + 3, QFade0 + 3);
@@ -67,10 +70,10 @@ void FadeGains(float complex *fade0, float complex *fade1)
 
 	// output is from the first element of IIR state variables
 	if (fade0) {
-		*fade0 = *IFade0 + *QFade0 * _Complex_I;
+		*fade0 = make_float_complex(*IFade0, *QFade0);
 	}
 	if (fade1) {
-		*fade1 = *IFade1 + *QFade1 * _Complex_I;
+		*fade1 = make_float_complex(*IFade1, *QFade1);
 	}
 }
 

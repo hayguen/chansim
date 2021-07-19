@@ -2,9 +2,9 @@
 #define _CHANSIM_H
 
 #include <stdlib.h>
-#include <complex.h>
+#include "cplx.h"
 
-#define Version "0.56-bns-3"
+#define Version "0.56-bns-4"
 
 static inline float RNG(void)
 {
@@ -13,10 +13,10 @@ static inline float RNG(void)
 
 /* in fade.c */
 extern void GaussInit(float, int);
-extern void FadeGains(float complex *, float complex *);
+extern void FadeGains(float_complex *, float_complex *);
 
 /* in delay.c */
 extern void init_delayline(float, int);
-extern float complex delayline(float complex);
+extern float_complex delayline(float_complex);
 
 #endif

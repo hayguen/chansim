@@ -64,14 +64,35 @@
 // a compromise. See the values selected as initialized.
 //
 
+#define _USE_MATH_DEFINES
+
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <process.h>
+#include <io.h>
+
+#define GETPID _getpid
+#define FILEDES_READ _read
+#define FILEDES_WRITE _write
+
+#else
+#define GETPID getpid
+#define FILEDES_READ read
+#define FILEDES_WRITE write
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+
+#ifdef USE_SOUND
 #include <unistd.h>
-#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/soundcard.h>
+#endif
+#include <fcntl.h>
 #include <time.h>
 
 #include "chansim.h"
@@ -79,15 +100,37 @@
 #include "rms.h"
 #include "noise.h"
 
+#ifdef _MSC_VER
+
+typedef int ssize_t;
+
+void usleep(unsigned int usec)
+{
+	HANDLE timer;
+	LARGE_INTEGER ft;
+
+	ft.QuadPart = -(10 * (__int64)usec);
+
+	timer = CreateWaitableTimer(NULL, TRUE, NULL);
+	SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+	WaitForSingleObject(timer, INFINITE);
+	CloseHandle(timer);
+}
+
+#endif
+
 //----------------------------------------------------------------------------
 // Audio I/O definitions
 //----------------------------------------------------------------------------
 #define BUF_SIZE	512		// "chunk" size
+
+#ifdef USE_SOUND
 #define DEVICE		"/dev/dsp"
+#endif
 int16_t audio_buf_in[BUF_SIZE];
 int16_t audio_buf_out[BUF_SIZE];
-int size_in;
-int size_out;
+int size_in = 0;
+int size_out = 0;
 
 //----------------------------------------------------------------------------
 // Test NCO work definitions
@@ -133,8 +176,9 @@ static const char *HelpString =
 "Usage: chansim [options] <SNR> <format>\n"
 "\n"
 "Arguments:\n"
-"    <SNR dB>          Signal to noise ratio.\n"
+"    <SNR dB>          Signal to noise ratio (option -R on Windows).\n"
 "    <format>          HF channel type. (Path delay / Doppler spread)\n"
+"                         (option -c on Windows)\n"
 "                      0 - Noise only           (  ---  /   --- )\n"
 "                      1 - Flat 1               (  ---  / 0.2 Hz)\n"
 "                      2 - Flat 2               (  ---  / 1.0 Hz)\n"
@@ -155,7 +199,7 @@ static const char *HelpString =
 "                      this factor. Default is 1.\n"
 "    -i <IO type>      I/O type.\n"
 "                      0 - Internal test NCO\n"
-"                      1 - Soundcard I/O\n"
+"                      1 - Soundcard I/O (not on Windows)\n"
 "                      2 - Pipe I/O (stdin/stdout)\n"
 "                      Default is pipe I/O.\n"
 "    -n <noise type>   Noise type.\n"
@@ -209,21 +253,21 @@ static const char *HF_Noise[] =
 //------------------------------------------------------------------
 static float simprocess(float input_signal)
 {
-	static float complex fade0, fade1;
+	static float_complex fade0, fade1;
 	static float nco = 0.0;
 	static int pointsleft = 0;
 	float rmsval;
 	float inoise;
-	float complex sig, dsig, z;
+	float_complex sig, dsig, z;
 
 	// Create analytic input signal
-	sig = (input_signal / M_SQRT2) + (input_signal / M_SQRT2) * _Complex_I;
+	sig = make_float_complex(input_signal / M_SQRT2, input_signal / M_SQRT2);
 	sig = filter(Filter, sig);
 
 	// Shift the frequency if requested
 	if (FreqOffset != 0.0) {
-		z = cosf(nco) + sinf(nco) * _Complex_I;
-		sig = sig * z;
+		z = make_float_complex(cosf(nco), sinf(nco));
+		sig = cplx_mulf(sig, z);
 
 		nco += 2.0 * M_PI * FreqOffset / SampleRate;
 
@@ -240,8 +284,8 @@ static float simprocess(float input_signal)
 		if (FrSpread > 0.0) {
 			FadeGains(&fade0, &fade1);
 		} else {
-			fade0 = (1.0 / M_SQRT2) + (1.0 / M_SQRT2) * _Complex_I;
-			fade1 = (1.0 / M_SQRT2) + (1.0 / M_SQRT2) * _Complex_I;
+			fade0 = make_float_complex(1.0 / M_SQRT2, 1.0 / M_SQRT2);
+			fade1 = make_float_complex(1.0 / M_SQRT2, 1.0 / M_SQRT2);
 		}
 		pointsleft = SampleRate / TapUpdRate;
 	}
@@ -256,19 +300,19 @@ static float simprocess(float input_signal)
 
 		// Delayed (second) path
 		dsig = delayline(sig);
-		dsig = dsig * fade1;
+		dsig = cplx_mulf(dsig, fade1);
 
 		// First path
-		sig = sig * fade0;
+		sig = cplx_mulf(sig, fade0);
 	} else {
 		// Flat fading
 
 		// First path
-		sig = sig * fade0;
-		sig *= M_SQRT2;
+		sig = cplx_mulf(sig, fade0);
+		cplx_scale(sig, M_SQRT2);
 
 		// Delayed path
-		dsig = 0.0F;
+		dsig = make_float_complex(0.0F, 0.0F);
 	}
 
 	// Compute input signal's RMS
@@ -339,6 +383,8 @@ static void SetParms(float snr, int simform)
 	TapUpdRate = 50.0 * FrSpread + 1.0;
 }
 
+#ifdef USE_SOUND
+
 //--------------------------------------------------------------------
 // Sets up CODEC and sound system stuff.
 // srate: sampling rate
@@ -381,6 +427,8 @@ static int init_audio(int srate, int chan, int format)
 
 	return audio_fd;
 }
+
+#endif
 
 //
 // Generate output from whatever input was selected...
@@ -435,17 +483,29 @@ int main(int argc, char *argv[])
 	int audio_fd = -1;
 	int i;
 	int errflag = 0;
-	int Chan_type;
+	int Chan_type = 0;
 	int IO_type = 2;	/* default is STDIO */
 	int Noise_type = 0;	/* default is gaussian */
-	float SNR_parm;
+	float SNR_parm = 30.0F;
 	unsigned int seed;
 	uint32_t usleep_duration = 0U;
 	ssize_t written;
 
-	seed = time(NULL) + getpid();
+	seed = time(NULL) + GETPID();
 
+#ifdef WIN32
+	for (int argidx = 1; argidx < argc; ++argidx)
+	{
+		char* optarg = (argidx + 1 < argc) ? argv[argidx + 1] : NULL;
+		char* arg = argv[argidx];
+		i = 0;
+		if (arg[0] == '-' && arg[2] == 0)
+			i = arg[1];
+		if (i && optarg)
+			++argidx;
+#else
 	while ((i = getopt(argc, argv, "a:b:f:g:hi:n:o:r:s:")) != EOF) {
+#endif
 		switch (i) {
 		case 'a':
 			Amplitude = atof(optarg);
@@ -482,6 +542,12 @@ int main(int argc, char *argv[])
 		case 's':
 			SampleRate = atoi(optarg);
 			break;
+		case 'R':
+			SNR_parm = atof(optarg);
+			break;
+		case 'c':
+			Chan_type = atoi(optarg);
+			break;
 		case 'h':
 			printf("%s", HelpString);
 			exit(0);
@@ -493,16 +559,20 @@ int main(int argc, char *argv[])
 		}
 	}
 
+#ifndef WIN32
 	if ((argc - optind) != 2)
 		errflag++;
+#endif
 
 	if (errflag) {
 		fprintf(stderr, "%s", UsageString);
 		exit(1);
 	}
 
+#ifndef WIN32
 	SNR_parm = atof(argv[optind++]);
 	Chan_type = atoi(argv[optind++]);
+#endif
 
 	if (Chan_type < 0 || Chan_type > 7) {
 		fprintf(stderr, "chansim: invalid channel type: %d\n", Chan_type);
@@ -531,7 +601,11 @@ int main(int argc, char *argv[])
 	// Initialize the audio hardware to selected sampling rate
 	// also Mono and signed 16 bit quantization.
 	if (IO_type < 2) {
+#ifdef USE_SOUND
 		audio_fd = init_audio(SampleRate, 0, AFMT_S16_LE);
+#else
+		audio_fd = -1;
+#endif
 		if (audio_fd < 0) {
 			if (IO_type == 1) {
 				fprintf(stderr, "error audio_fd is %d\n", audio_fd);
@@ -543,6 +617,11 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+
+#ifdef WIN32
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+#endif
 
 	// Seed the random number generator
 	srand(seed);
@@ -585,11 +664,12 @@ int main(int argc, char *argv[])
 		// Fill output buffer
 		size_out = gensig(audio_buf_out, size_in, IO_type);
 
+#ifdef USE_SOUND
 		// Wait for a full data buffer -- this is our pacer.
 		// This read() is a blocked call since the input buffer
 		// is not yet full.
 		if ((IO_type == 0 && audio_fd >= 0) || IO_type == 1) {
-			size_in = read(audio_fd, audio_buf_in, BUF_SIZE * sizeof(int16_t));
+			size_in = FILEDES_READ(audio_fd, audio_buf_in, BUF_SIZE * sizeof(int16_t));
 
 			if (size_in == 0)
 				break;
@@ -609,18 +689,20 @@ int main(int argc, char *argv[])
 			// Initiate the writing of the prepared buffer.
 			// This write() is not blocked because there is space
 			// left in the output buffer.
-			written = write(audio_fd, audio_buf_out, size_out * sizeof(int16_t));
+			written = FILEDES_WRITE(audio_fd, audio_buf_out, size_out * sizeof(int16_t));
 			if (written < 0) {
 				perror("Error: write audio:");
 				exit(-1);
 			}
 		}
+#endif
 
 		// internal test NCO - without soundcard
 		if (IO_type == 0 && audio_fd < 0) {
 			usleep( usleep_duration );
 			size_in = BUF_SIZE;
-			fwrite(audio_buf_out, sizeof(int16_t), size_out, stdout);
+			if (size_out)
+				fwrite(audio_buf_out, sizeof(int16_t), size_out, stdout);
 		}
 
 		// File IO

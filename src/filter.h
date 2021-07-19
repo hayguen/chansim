@@ -5,7 +5,7 @@
 #define BufferLen	1024
 
 #include <string.h>
-#include <complex.h>
+#include "cplx.h"
 
 /* ---------------------------------------------------------------------- */
 
@@ -34,17 +34,17 @@ static inline float mac(const float *a, const float *b)
 	return sum;
 }
 
-static inline float complex filter(struct filter_s *f, float complex in)
+static inline float_complex filter(struct filter_s *f, float_complex in)
 {
         float *iptr = f->ibuffer + f->ptr;
         float *qptr = f->qbuffer + f->ptr;
-        float complex out;
+        float_complex out;
 
         *iptr = crealf(in);
         *qptr = cimagf(in);
 
-        out = mac(iptr - FilterLen, f->ifilter)
-            + mac(qptr - FilterLen, f->qfilter) * _Complex_I;
+        out = make_float_complex( mac(iptr - FilterLen, f->ifilter)
+                                , mac(qptr - FilterLen, f->qfilter));
 
         f->ptr++;
         if (f->ptr == BufferLen) {

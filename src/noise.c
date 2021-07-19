@@ -1,8 +1,11 @@
-#include <stdlib.h>
-#include <math.h>
+
+#define _USE_MATH_DEFINES
 
 #include "chansim.h"
 #include "noise.h"
+
+#include <stdlib.h>
+#include <math.h>
 
 //----------------------------------------------------------------------------
 // Filter to limit noise to the desired base band bandwidth.

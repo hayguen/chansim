@@ -1,4 +1,6 @@
 
+#define _USE_MATH_DEFINES
+
 #include "chansim.h"
 
 #include <stdio.h>
@@ -8,7 +10,7 @@
 
 #define DELAYTAPS	256
 
-static float complex DelayLine[DELAYTAPS];
+static float_complex DelayLine[DELAYTAPS];
 
 static int Ptr;
 static int DelayPtr;
@@ -38,9 +40,9 @@ void init_delayline(float deltime, int samplerate)
 	DelayPtr = DELAYTAPS - dllen;
 }
 
-float complex delayline(float complex in)
+float_complex delayline(float_complex in)
 {
-	float complex out;
+	float_complex out;
 
 	/* save the new sample to the delayline */
 	DelayLine[Ptr] = in;

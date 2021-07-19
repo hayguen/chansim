@@ -1,7 +1,10 @@
-#include <stdlib.h>
-#include <math.h>
+
+#define _USE_MATH_DEFINES
 
 #include "rms.h"
+
+#include <stdlib.h>
+#include <math.h>
 
 struct rms_s *init_rms(int len, int interval)
 {

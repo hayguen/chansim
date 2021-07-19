@@ -1,9 +1,11 @@
 
+#define _USE_MATH_DEFINES
+
 #include "filter.h"
+#include "cplx.h"
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <complex.h>
 #include <math.h>
 
 #undef	DEBUG
