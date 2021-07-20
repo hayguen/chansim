@@ -50,7 +50,9 @@ set(CHANSIM_HDRS
 
 add_executable(chansim  ${CHANSIM_SRCS} ${CHANSIM_HDRS})
 target_compile_definitions(chansim PRIVATE _GNU_SOURCE)
-if (NOT WIN32)
+if (WIN32 OR MINGW)
+  message(WARNING "Soundcard is not supported on Windows or MINGW")
+else()
   target_compile_definitions(chansim PRIVATE USE_SOUND)
 endif()
 target_link_libraries(chansim  ${MATHLIB})

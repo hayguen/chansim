@@ -66,7 +66,7 @@
 
 #define _USE_MATH_DEFINES
 
-#ifdef _MSC_VER
+#ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <process.h>
@@ -101,9 +101,12 @@
 #include "noise.h"
 
 
-#ifdef _MSC_VER
+#ifdef WIN32
 
+#ifdef _MSC_VER
+/* mingw does define this */
 typedef int ssize_t;
+#endif
 
 void usleep(unsigned int usec)
 {
