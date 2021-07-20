@@ -17,31 +17,31 @@
 /*
  * Sinc done properly.
  */
-static inline double sinc(double x)
+static inline float sinc(float x)
 {
-	if (fabs(x) < 1e-10)
-		return 1.0;
+	if (fabsf(x) < 1e-10F)
+		return 1.0F;
 	else
-		return sin(M_PI * x) / (M_PI * x);
+		return sinf((float)M_PI * x) / ((float)M_PI * x);
 }
 
 /*
  * Don't ask...
  */
-static inline double cosc(double x)
+static inline float cosc(float x)
 {
-	if (fabs(x) < 1e-10)
-		return 0.0;
+	if (fabsf(x) < 1e-10F)
+		return 0.0F;
 	else
-		return (1.0 - cos(M_PI * x)) / (M_PI * x);
+		return (1.0F - cosf((float)M_PI * x)) / ((float)M_PI * x);
 }
 
 /*
  * Hamming window function.
  */
-static inline double hamming(double x)
+static inline float hamming(float x)
 {
-	return 0.54 - 0.46 * cos(2 * M_PI * x);
+	return 0.54F - 0.46F * cosf(2.0F * (float)M_PI * x);
 }
 
 /*
@@ -58,11 +58,11 @@ struct filter_s *init_filter(float f1, float f2)
 		return NULL;
 
 	for (i = 0; i < FilterLen; i++) {
-		t = i - (FilterLen - 1.0) / 2.0;
-		h = i * (1.0 / (FilterLen - 1.0));
+		t = i - (FilterLen - 1) / 2.0F;
+		h = i * (1.0F / (FilterLen - 1.0F));
 
-		x = (2 * f2 * sinc((2.0 * f2) * t) -
-		     2 * f1 * sinc((2.0 * f1) * t)) * hamming(h);
+		x = (2 * f2 * sinc((2.0F * f2) * t) -
+		     2 * f1 * sinc((2.0F * f1) * t)) * hamming(h);
 		f->ifilter[i] = x;
 #ifdef DEBUG
 		fprintf(stderr, "%.10f\t", x);
@@ -73,8 +73,8 @@ struct filter_s *init_filter(float f1, float f2)
 		 * is in time reversed order. This will be anti-
 		 * symmetric so the minus sign handles that for us.
 		 */
-		x = (2 * f2 * cosc((2.0 * f2) * t) -
-		     2 * f1 * cosc((2.0 * f1) * t)) * hamming(h);
+		x = (2 * f2 * cosc((2.0F * f2) * t) -
+		     2 * f1 * cosc((2.0F * f1) * t)) * hamming(h);
 		f->qfilter[i] = -x;
 #ifdef DEBUG
 		fprintf(stderr, "%.10f\n", x);

@@ -22,7 +22,7 @@ struct rms_s *init_rms(int len, int interval)
 	r->interval = interval;
 	r->counter = 0;
 	r->ptr = 0;
-	r->rms = 0.0;
+	r->rms = 0.0F;
 
 	return r;
 }
@@ -35,20 +35,20 @@ void clear_rms(struct rms_s *r)
 	return;
 }
 
-static inline float calculate_rms(float *buf, int len)
+static inline float calculate_rms(const float *buf, int len)
 {
         float sum, pwr, avg, rms;
         int i;
 
-        sum = 0.0;
-        pwr = 0.0;
+        sum = 0.0F;
+        pwr = 0.0F;
         for (i = 0; i < len; i++) {
                 sum += buf[i];
                 pwr += buf[i] * buf[i];
         }
 
         avg = sum / len;
-        rms = sqrt(pwr / len - avg * avg);
+        rms = sqrtf(pwr / len - avg * avg);
 
         return rms;
 }

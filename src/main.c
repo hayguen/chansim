@@ -100,6 +100,7 @@
 #include "rms.h"
 #include "noise.h"
 
+
 #ifdef _MSC_VER
 
 typedef int ssize_t;
@@ -241,6 +242,11 @@ static const char *HF_Noise[] =
 	"Impulse noise"		// 2
 };
 
+static inline float atoff(const char *s)
+{
+	return (float)atof(s);
+}
+
 //------------------------------------------------------------------
 // Simulated HF channel.
 //------------------------------------------------------------------
@@ -261,7 +267,7 @@ static float simprocess(float input_signal)
 	float_complex sig, dsig, z;
 
 	// Create analytic input signal
-	sig = make_float_complex(input_signal / M_SQRT2, input_signal / M_SQRT2);
+	sig = make_float_complex(input_signal / (float)M_SQRT2, input_signal / (float)M_SQRT2);
 	sig = filter(Filter, sig);
 
 	// Shift the frequency if requested
@@ -269,23 +275,23 @@ static float simprocess(float input_signal)
 		z = make_float_complex(cosf(nco), sinf(nco));
 		sig = cplx_mulf(sig, z);
 
-		nco += 2.0 * M_PI * FreqOffset / SampleRate;
+		nco += 2.0F * (float)M_PI * FreqOffset / SampleRate;
 
-		if (nco > M_PI)
-			nco -= 2.0 * M_PI;
-		if (nco < -M_PI)
-			nco += 2.0 * M_PI;
+		if (nco > (float)M_PI)
+			nco -= 2.0F * (float)M_PI;
+		if (nco < (float)(-M_PI))
+			nco += 2.0F * (float)M_PI;
 	}
 
 	// Fading gain is activated at the "symbol" (update) rate.
 	// Update direct and delayed path fading gain coefficients if needed,
 	// for noise-only simulation, leave fading gain coefficients constant.
 	if (--pointsleft <= 0) {
-		if (FrSpread > 0.0) {
+		if (FrSpread > 0.0F) {
 			FadeGains(&fade0, &fade1);
 		} else {
-			fade0 = make_float_complex(1.0 / M_SQRT2, 1.0 / M_SQRT2);
-			fade1 = make_float_complex(1.0 / M_SQRT2, 1.0 / M_SQRT2);
+			fade0 = make_float_complex(1.0F / (float)M_SQRT2, 1.0F / (float)M_SQRT2);
+			fade1 = make_float_complex(1.0F / (float)M_SQRT2, 1.0F / (float)M_SQRT2);
 		}
 		pointsleft = SampleRate / TapUpdRate;
 	}
@@ -309,7 +315,7 @@ static float simprocess(float input_signal)
 
 		// First path
 		sig = cplx_mulf(sig, fade0);
-		cplx_scale(sig, M_SQRT2);
+		cplx_scale(sig, (float)M_SQRT2);
 
 		// Delayed path
 		dsig = make_float_complex(0.0F, 0.0F);
@@ -317,7 +323,7 @@ static float simprocess(float input_signal)
 
 	// Compute input signal's RMS
 	// This is needed to scale noise magnitude.
-	if (Amplitude == 0.0)
+	if (Amplitude == 0.0F)
 		rmsval = rms(RootMeanSqr, input_signal);
 	else
 		rmsval = Amplitude;
@@ -343,44 +349,44 @@ static float simprocess(float input_signal)
 static void SetParms(float snr, int simform)
 {
 	// convert from dB to voltage ratio
-	SigLvl = pow(10.0, snr / 20.0);
+	SigLvl = powf(10.0F, snr / 20.0F);
 
 	switch (simform) {
 	default:
 	case 0:				// NOISE ONLY
-		DelTime = 0.0;
-		FrSpread = 0.0;
+		DelTime = 0.0F;
+		FrSpread = 0.0F;
 		break;
 	case 1:				// FLAT 1
-		DelTime = 0.0;		// 0.0 ms delay
-		FrSpread = 0.2;		// 0.2 Hz spread
+		DelTime = 0.0F;		// 0.0 ms delay
+		FrSpread = 0.2F;		// 0.2 Hz spread
 		break;
 	case 2:				// FLAT 2
-		DelTime = 0.0;		// 0.0 ms delay
-		FrSpread = 1.0;		// 1.0 Hz spread
+		DelTime = 0.0F;		// 0.0 ms delay
+		FrSpread = 1.0F;		// 1.0 Hz spread
 		break;
 	case 3:				// CCIR GOOD
-		DelTime = 0.5e-3;	// 0.5 ms delay
-		FrSpread = 0.1;		// 0.1 Hz spread
+		DelTime = 0.5e-3F;	// 0.5 ms delay
+		FrSpread = 0.1F;		// 0.1 Hz spread
 		break;
 	case 4:				// CCIR MODERATE
-		DelTime = 1.0e-3;	// 1.0 ms delay
-		FrSpread = 0.5;		// 0.5 Hz spread
+		DelTime = 1.0e-3F;	// 1.0 ms delay
+		FrSpread = 0.5F;		// 0.5 Hz spread
 		break;
 	case 5:				// CCIR POOR
-		DelTime = 2.0e-3;	// 2.0 ms delay
-		FrSpread = 1.0;		// 1.0 Hz spread
+		DelTime = 2.0e-3F;	// 2.0 ms delay
+		FrSpread = 1.0F;		// 1.0 Hz spread
 		break;
 	case 6:				// CCIR FLUTTER FADING
-		DelTime = 0.5e-3;	// 0.5 ms delay
-		FrSpread = 10.0;	// 10.0 Hz spread
+		DelTime = 0.5e-3F;	// 0.5 ms delay
+		FrSpread = 10.0F;	// 10.0 Hz spread
 		break;
 	case 7:				// EXTREME
-		DelTime = 2.0e-3;	// 2.0 ms delay
-		FrSpread = 5.0;		// 5.0 Hz spread
+		DelTime = 2.0e-3F;	// 2.0 ms delay
+		FrSpread = 5.0F;		// 5.0 Hz spread
 		break;
 	}
-	TapUpdRate = 50.0 * FrSpread + 1.0;
+	TapUpdRate = (int)(50.0F * FrSpread + 1.0F);
 }
 
 #ifdef USE_SOUND
@@ -442,17 +448,17 @@ static int gensig(int16_t *buf_ptr, int size, int iotype)
 	for (i = 0; i < size; i++) {
 		switch (iotype) {
 		case 0:				// NCO
-			temp = NCO_GAIN * cos(phase_accum);
+			temp = (int16_t)( NCO_GAIN * cosf(phase_accum) );
 			phase_accum += delta;
-			if (phase_accum > 2.0 * M_PI)
-				phase_accum -= 2.0 *M_PI;
+			if (phase_accum > 2.0F * (float)M_PI)
+				phase_accum -= 2.0F * (float)M_PI;
 			break;
 		case 1:				// Sound IO
 		case 2:				// File IO
 			temp = audio_buf_in[i];
 			break;
 		default:			// Won't happen...
-			temp = 0.0;
+			temp = 0;
 			break;
 		}
 
@@ -489,9 +495,8 @@ int main(int argc, char *argv[])
 	float SNR_parm = 30.0F;
 	unsigned int seed;
 	uint32_t usleep_duration = 0U;
-	ssize_t written;
 
-	seed = time(NULL) + GETPID();
+	seed = (unsigned)( time(NULL) + GETPID() );
 
 #ifdef WIN32
 	for (int argidx = 1; argidx < argc; ++argidx)
@@ -508,16 +513,16 @@ int main(int argc, char *argv[])
 #endif
 		switch (i) {
 		case 'a':
-			Amplitude = atof(optarg);
+			Amplitude = atoff(optarg);
 			break;
 		case 'b':
-			ChannelBW = atof(optarg);
+			ChannelBW = atoff(optarg);
 			break;
 		case 'f':
-			NCOFreq = atof(optarg);
+			NCOFreq = atoff(optarg);
 			break;
 		case 'g':
-			InputGain = atof(optarg);
+			InputGain = atoff(optarg);
 			break;
 		case 'i':
 			IO_type = atoi(optarg);
@@ -534,7 +539,7 @@ int main(int argc, char *argv[])
 			}
 			break;
 		case 'o':
-			FreqOffset = atof(optarg);
+			FreqOffset = atoff(optarg);
 			break;
 		case 'r':
 			seed = strtoul(optarg, NULL, 0);
@@ -543,7 +548,7 @@ int main(int argc, char *argv[])
 			SampleRate = atoi(optarg);
 			break;
 		case 'R':
-			SNR_parm = atof(optarg);
+			SNR_parm = atoff(optarg);
 			break;
 		case 'c':
 			Chan_type = atoi(optarg);
@@ -596,7 +601,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "\n");
 
 
-	delta = 2.0 * M_PI * NCOFreq / SampleRate;
+	delta = 2.0F * (float)M_PI * NCOFreq / SampleRate;
 
 	// Initialize the audio hardware to selected sampling rate
 	// also Mono and signed 16 bit quantization.
@@ -630,7 +635,7 @@ int main(int argc, char *argv[])
 	SetParms(SNR_parm, Chan_type);
 
 	// Initialize the noise module
-	Noise = init_noise(Noise_type, SampleRate, ChannelBW);
+	Noise = init_noise(Noise_type, (float)SampleRate, ChannelBW);
 	if (!Noise) {
 		fprintf(stderr, "Noise module initialization failed\n");
 		exit(1);
@@ -650,7 +655,7 @@ int main(int argc, char *argv[])
 	}
 
 	// Initialize the Hilbert transformer (200...3800Hz @ 8000sps)
-	Filter = init_filter(200.0 / SampleRate, (ChannelBW + 200.0) / SampleRate);
+	Filter = init_filter(200.0F / SampleRate, (ChannelBW + 200.0F) / SampleRate);
 	if (!Filter) {
 		fprintf(stderr, "Filter initialization failed\n");
 		exit(1);
@@ -669,6 +674,7 @@ int main(int argc, char *argv[])
 		// This read() is a blocked call since the input buffer
 		// is not yet full.
 		if ((IO_type == 0 && audio_fd >= 0) || IO_type == 1) {
+			ssize_t written;
 			size_in = FILEDES_READ(audio_fd, audio_buf_in, BUF_SIZE * sizeof(int16_t));
 
 			if (size_in == 0)
@@ -707,7 +713,7 @@ int main(int argc, char *argv[])
 
 		// File IO
 		if (IO_type == 2) {
-			size_in = fread(audio_buf_in, sizeof(int16_t), BUF_SIZE, stdin);
+			size_in = (int)fread(audio_buf_in, sizeof(int16_t), BUF_SIZE, stdin);
 
 			if (size_in == 0)
 				break;

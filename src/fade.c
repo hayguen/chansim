@@ -24,10 +24,10 @@ static inline void Rayleigh(float *Rx, float *Iy)
 {
         float rxx, z;
 
-        rxx = sqrt(-2.0 * log(RNG()));
-        z = 2.0 * M_PI * RNG();
-        *Rx = rxx * cos(z);
-        *Iy = rxx * sin(z);
+        rxx = sqrtf(-2.0F * logf(RNG()));
+        z = 2.0F * (float)M_PI * RNG();
+        *Rx = rxx * cosf(z);
+        *Iy = rxx * sinf(z);
 }
 
 //----------------------------------------------------------------------------
@@ -86,7 +86,7 @@ void GaussInit(float frspread, int tapupdrate)
         int i;
         float a, c, A, C;
 
-	if (frspread == 0.0)
+	if (frspread == 0.0F)
 		return;
 
 //--------------------------------------------------------------------------
@@ -96,15 +96,15 @@ void GaussInit(float frspread, int tapupdrate)
 //--------------------------------------------------------------------------
 	// Convert Hz ==> rad/symbol
 	// Radians/sec = 2*pi*Hz = 2*pi/T
-	frspread *= 2.0 * M_PI / tapupdrate;
+	frspread *= 2.0F * (float)M_PI / tapupdrate;
 	// for 2Sigma
-	frspread /= M_SQRT2;
+	frspread /= (float)M_SQRT2;
 
 	// Coefficients for 2-pole Butterworth filter.
 	// With Gaussian input data, this filter's output
 	// is also Gaussian.
-	a = sqrt(2.0 * M_PI);
-	c = 1.5;
+	a = sqrtf(2.0F * (float)M_PI);
+	c = 1.5F;
 	A = a / frspread;
 	C = c / frspread;
 	C *= C;
@@ -113,18 +113,18 @@ void GaussInit(float frspread, int tapupdrate)
 	// such that others can access it.
 
 	// Compensates for filter Power loss
-	g = sqrtf(0.5 * sqrtf(2 * M_PI) / frspread);
+	g = sqrtf(0.5F * sqrtf(2.0F * (float)M_PI) / frspread);
 
-	a0 = A + C + 1.0;
-	a1 = 2 * (1.0 - C);
-	a2 = C + 1.0 - A;
+	a0 = A + C + 1.0F;
+	a1 = 2 * (1.0F - C);
+	a2 = C + 1.0F - A;
 
 	// Clear filter state elements.
 	for (i = 0; i < 6; i++) {
-		IFade0[i] = 0.0;
-		QFade0[i] = 0.0;
-		IFade1[i] = 0.0;
-		QFade1[i] = 0.0;
+		IFade0[i] = 0.0F;
+		QFade0[i] = 0.0F;
+		IFade1[i] = 0.0F;
+		QFade1[i] = 0.0F;
 	}
 
 	// and prime the filter state

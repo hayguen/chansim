@@ -15,7 +15,7 @@ static float_complex DelayLine[DELAYTAPS];
 static int Ptr;
 static int DelayPtr;
 
-void init_delayline(float deltime, int samplerate)
+void init_delayline(float delay_time_in_sec, int samplerate)
 {
 	int dllen;
 
@@ -23,7 +23,7 @@ void init_delayline(float deltime, int samplerate)
 	memset(DelayLine, 0, sizeof(DelayLine));
 
 	/* scale from seconds to samples */
-	dllen = (int) floor(deltime * samplerate + 0.5);
+	dllen = (int) floor(delay_time_in_sec * samplerate + 0.5);
 
 	if (dllen == 0)
 		dllen = 1;

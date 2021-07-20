@@ -2,12 +2,12 @@
 #define _RMS_H
 
 struct rms_s {
-	float *buffer;
+	float *buffer;  /* ring buffer for previous samples */
 	int bufferlen;
-        int interval;
+        int interval;  /* number of new samples (= calls to rms()) to update it's return value */
         int counter;
         int ptr;
-        float rms;
+        float rms;  /* cached return for rms() */
 };
 
 extern struct rms_s *init_rms(int len, int interval);

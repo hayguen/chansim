@@ -12,11 +12,11 @@ static inline float RNG(void)
 }
 
 /* in fade.c */
-extern void GaussInit(float, int);
+extern void GaussInit(float frspread, int tapupdrate);
 extern void FadeGains(float_complex *, float_complex *);
 
 /* in delay.c */
-extern void init_delayline(float, int);
+extern void init_delayline(float delay_time_in_sec, int samplerate);
 extern float_complex delayline(float_complex);
 
 #endif
